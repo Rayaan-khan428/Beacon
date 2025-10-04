@@ -2,8 +2,13 @@ import json
 import requests
 import os
 from twilio.rest import Client
+from dotenv import load_dotenv
 
-# Get environment variables (set in AWS Lambda configuration)
+# Load environment variables from .env file (sfor local testing)
+load_dotenv('.env')
+
+
+# Get environment variables (set in AWS Lambda configuration or .env file)
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 WEATHER_API_KEY = os.environ.get('WEATHER_API_KEY')
 TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
