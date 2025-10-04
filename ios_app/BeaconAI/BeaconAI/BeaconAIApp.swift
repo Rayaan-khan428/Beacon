@@ -10,6 +10,8 @@ import SwiftData
 
 @main
 struct BeaconAIApp: App {
+    @State private var showOnboarding: Bool = true
+    
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -25,7 +27,11 @@ struct BeaconAIApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if showOnboarding {
+                OnboardingView(hasCompletedOnboarding: $showOnboarding)
+            } else {
+                ContentView()
+            }
         }
         .modelContainer(sharedModelContainer)
     }
