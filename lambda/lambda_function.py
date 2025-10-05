@@ -9,7 +9,7 @@ load_dotenv('.env')
 
 
 # Get environment variables (set in AWS Lambda configuration or .env file)
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 WEATHER_API_KEY = os.environ.get('WEATHER_API_KEY')
 TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
@@ -145,12 +145,13 @@ def handle_weather_request(message):
 
 def handle_ai_request(message):
     """
-    Send request to OpenAI API for general questions
+    Send request to Gemini API for general questions
     """
-    url = "https://api.openai.com/v1/chat/completions"
+    # Gemini API endpoint (note: using v1beta as shown in the curl example)
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent"
     
     headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "x-goog-api-key": GEMINI_API_KEY,
         "Content-Type": "application/json"
     }
     
@@ -161,19 +162,17 @@ def handle_ai_request(message):
     If medical emergency, emphasize seeking professional help."""
     
     payload = {
-        "model": "gpt-4o-mini",
-        "messages": [
-            {
-                "role": "system",
-                "content": system_prompt
-            },
-            {
-                "role": "user",
-                "content": message
-            }
-        ],
-        "max_tokens": 150,
-        "temperature": 0.3
+        "contents": [{
+            "parts": [{
+                "text": f"{system_prompt}\n\nUser: {message}"
+            }]
+        }],
+        "generationConfig": {
+            "temperature": 0.3,
+            "maxOutputTokens": 150,
+            "topP": 0.8,
+            "topK": 40
+        }
     }
     
     try:
@@ -181,16 +180,18 @@ def handle_ai_request(message):
         response.raise_for_status()
         data = response.json()
         
-        ai_response = data['choices'][0]['message']['content'].strip()
+        ai_response = data['candidates'][0]['content']['parts'][0]['text'].strip()
         return ai_response
         
     except requests.exceptions.Timeout:
         return "AI service timeout. Try simpler question."
     except requests.exceptions.RequestException as e:
-        print(f"OpenAI API error: {e}")
+        print(f"Gemini API error: {e}")
+        print(f"Response content: {response.text if 'response' in locals() else 'No response'}")
         return "AI service unavailable. Try again later."
     except (KeyError, IndexError) as e:
-        print(f"OpenAI response parsing error: {e}")
+        print(f"Gemini response parsing error: {e}")
+        print(f"Response data: {data if 'data' in locals() else 'No data'}")
         return "Error processing AI response."
 
 
@@ -249,9 +250,9 @@ def compress_message(message):
     # Remove extra spaces
     compressed = ' '.join(compressed.split())
     
-    # Truncate if still too long (SMS limit is 160 chars, but leaving buffer)
-    if len(compressed) > 160:
-        compressed = compressed[:157] + "..."
+    # Truncate if still too long (limit is 250 chars)
+    if len(compressed) > 250:
+        compressed = compressed[:247] + "..."
     
     return compressed
 

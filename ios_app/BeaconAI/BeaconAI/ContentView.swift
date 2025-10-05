@@ -26,11 +26,8 @@ struct ContentView: View {
             Group {
                 switch selectedTab {
                 case .weather:
-                    WeatherView()
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .leading).combined(with: .opacity),
-                            removal: .move(edge: .trailing).combined(with: .opacity)
-                        ))
+                    WeatherView(twilioNumber: twilioNumber)
+                        .transition(.opacity)
                 case .question:
                     QuestionView(
                         userMessage: $userMessage,
@@ -47,10 +44,7 @@ struct ContentView: View {
                         .transition(.opacity)
                 case .settings:
                     SettingsView(twilioNumber: twilioNumber)
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        ))
+                        .transition(.opacity)
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: selectedTab)
@@ -125,8 +119,8 @@ struct ContentView: View {
             .joined(separator: " ")
         
         // Truncate if too long
-        if compressed.count > 160 {
-            compressed = String(compressed.prefix(157)) + "..."
+        if compressed.count > 250 {
+            compressed = String(compressed.prefix(247)) + "..."
         }
         
         compressedMessage = compressed
@@ -342,6 +336,7 @@ struct NavButton: View {
 
 // MARK: - Weather View
 struct WeatherView: View {
+    let twilioNumber: String
     @StateObject private var locationManager = LocationManager()
     @State private var latitude: String = ""
     @State private var longitude: String = ""
@@ -350,118 +345,215 @@ struct WeatherView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(alignment: .leading, spacing: 28) {
                     // Header
-                    VStack(spacing: 8) {
-                        Image(systemName: "cloud.sun.fill")
-                            .font(.system(size: 60))
-                            .foregroundColor(.blue)
-                        
-                        Text("Weather by Coordinates")
-                            .font(.custom("Manrope-Bold", size: 28))
-                        
-                        Text("Get weather info for any location")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(.top, 20)
-                    
-                    // Use Current Location Button
-                    Button(action: {
-                        isLoadingLocation = true
-                        locationManager.requestLocation()
-                    }) {
-                        HStack {
-                            if isLoadingLocation && locationManager.location == nil {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                    .scaleEffect(0.8)
-                            } else {
-                                Image(systemName: "location.fill")
-                            }
-                            Text("Use My Current Location")
-                        }
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.green)
-                        .cornerRadius(12)
-                    }
-                    .padding(.horizontal)
-                    .disabled(isLoadingLocation && locationManager.location == nil)
-                    
-                    // Location status message
-                    if let error = locationManager.errorMessage {
-                        Text(error)
-                            .font(.caption)
-                            .foregroundColor(.red)
-                            .padding(.horizontal)
-                    }
-                    
-                    Text("or enter manually")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    // Coordinates Input
-                    VStack(alignment: .leading, spacing: 15) {
-                        Text("Enter Coordinates")
-                            .font(.headline)
-                        
-                        HStack(spacing: 15) {
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text("Latitude")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                TextField("37.7749", text: $latitude)
-                                    .keyboardType(.decimalPad)
-                                    .padding()
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(10)
-                            }
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "cloud.sun.fill")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(.orange)
                             
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text("Longitude")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                TextField("-122.4194", text: $longitude)
-                                    .keyboardType(.decimalPad)
-                                    .padding()
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(10)
-                            }
+                            Text("WEATHER")
+                                .font(.system(size: 15, weight: .bold, design: .monospaced))
+                                .foregroundColor(.primary)
+                                .tracking(1.5)
                         }
                         
+                        Text("Coordinate-Based Forecast")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .textCase(.uppercase)
+                            .tracking(0.5)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(Color(.secondarySystemGroupedBackground))
+                    
+                    // Quick Location Section
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            Rectangle()
+                                .fill(Color.blue)
+                                .frame(width: 3, height: 16)
+                            
+                            Text("LOCATION INPUT")
+                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                .foregroundColor(.secondary)
+                                .tracking(1)
+                        }
+                        .padding(.horizontal, 20)
+                        
+                        // Use Current Location Button
                         Button(action: {
-                            // Weather request action
+                            isLoadingLocation = true
+                            locationManager.requestLocation()
                         }) {
-                            HStack {
-                                Image(systemName: "cloud.sun.fill")
-                                Text("Get Weather")
+                            HStack(spacing: 10) {
+                                if isLoadingLocation && locationManager.location == nil {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .scaleEffect(0.8)
+                                } else {
+                                    Image(systemName: "location.fill")
+                                        .font(.system(size: 16, weight: .semibold))
+                                }
+                                Text(isLoadingLocation ? "LOCATING..." : "USE CURRENT LOCATION")
+                                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                    .tracking(0.5)
                             }
-                            .font(.headline)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.blue)
-                            .cornerRadius(12)
+                            .padding(.vertical, 14)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.blue, Color.blue.opacity(0.85)]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                            )
                         }
-                        .disabled(latitude.isEmpty || longitude.isEmpty)
+                        .padding(.horizontal, 20)
+                        .disabled(isLoadingLocation && locationManager.location == nil)
+                        
+                        // Location status message
+                        if let error = locationManager.errorMessage {
+                            HStack(spacing: 8) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 12))
+                                Text(error)
+                                    .font(.system(size: 13))
+                            }
+                            .foregroundColor(.red)
+                            .padding(.horizontal, 20)
+                        }
                     }
-                    .padding(.horizontal)
                     
-                    Spacer()
+                    // Coordinates Input
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            Rectangle()
+                                .fill(Color.orange)
+                                .frame(width: 3, height: 16)
+                            
+                            Text("MANUAL COORDINATES")
+                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                .foregroundColor(.secondary)
+                                .tracking(1)
+                        }
+                        .padding(.horizontal, 20)
+                        
+                        VStack(spacing: 12) {
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("LAT")
+                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                        .foregroundColor(.secondary)
+                                        .tracking(1)
+                                    TextField("37.7749", text: $latitude)
+                                        .keyboardType(.decimalPad)
+                                        .font(.system(size: 15, design: .monospaced))
+                                        .padding(12)
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(8)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(Color(.systemGray4), lineWidth: 1)
+                                        )
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("LON")
+                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                        .foregroundColor(.secondary)
+                                        .tracking(1)
+                                    TextField("-122.4194", text: $longitude)
+                                        .keyboardType(.decimalPad)
+                                        .font(.system(size: 15, design: .monospaced))
+                                        .padding(12)
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(8)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(Color(.systemGray4), lineWidth: 1)
+                                        )
+                                }
+                            }
+                            
+                            Button(action: {
+                                sendWeatherRequest()
+                            }) {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "cloud.sun.fill")
+                                        .font(.system(size: 16, weight: .semibold))
+                                    Text("REQUEST FORECAST")
+                                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                        .tracking(0.5)
+                                }
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(
+                                    Group {
+                                        if latitude.isEmpty || longitude.isEmpty {
+                                            Color.gray.opacity(0.5)
+                                        } else {
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [Color.green, Color.green.opacity(0.85)]),
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        }
+                                    }
+                                )
+                                .cornerRadius(8)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                )
+                            }
+                            .disabled(latitude.isEmpty || longitude.isEmpty)
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                    
+                    Spacer(minLength: 20)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(Color(.systemGroupedBackground))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        // Show weather info
+                    }) {
+                        Image(systemName: "info.circle")
+                            .foregroundColor(.primary)
+                    }
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .onChange(of: locationManager.location) { location in
-                if let location = location {
+            .onChange(of: locationManager.location) { oldValue, newValue in
+                if let location = newValue {
                     latitude = String(format: "%.6f", location.coordinate.latitude)
                     longitude = String(format: "%.6f", location.coordinate.longitude)
                     isLoadingLocation = false
                 }
             }
+        }
+    }
+    
+    private func sendWeatherRequest() {
+        let message = "weather \(latitude), \(longitude)"
+        let sms = "sms:\(twilioNumber)&body=\(message.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+        
+        if let url = URL(string: sms) {
+            UIApplication.shared.open(url)
         }
     }
 }
@@ -580,18 +672,28 @@ struct QuestionView: View {
 // MARK: - Question View Sub-Components
 struct HeaderSection: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("BeaconAI")
-                .font(.custom("Manrope-Bold", size: 32))
-                .foregroundColor(.primary)
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 8) {
+                Image(systemName: "antenna.radiowaves.left.and.right")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.orange)
+                
+                Text("BEACON")
+                    .font(.system(size: 15, weight: .bold, design: .monospaced))
+                    .foregroundColor(.primary)
+                    .tracking(1.5)
+            }
             
-            Text("Emergency intelligence via satellite")
-                .font(.system(size: 16))
+            Text("Satellite Emergency System")
+                .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.secondary)
+                .textCase(.uppercase)
+                .tracking(0.5)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 20)
-        .padding(.top, 8)
+        .padding(.vertical, 12)
+        .background(Color(.secondarySystemGroupedBackground))
     }
 }
 
@@ -611,10 +713,17 @@ struct QuickActionsSection: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Quick Actions")
-                .font(.custom("Manrope-Bold", size: 20))
-                .foregroundColor(.primary)
-                .padding(.horizontal, 20)
+            HStack {
+                Rectangle()
+                    .fill(Color.orange)
+                    .frame(width: 3, height: 16)
+                
+                Text("EMERGENCY TEMPLATES")
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .tracking(1)
+            }
+            .padding(.horizontal, 20)
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
@@ -641,10 +750,17 @@ struct CustomMessageSection: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Your Message")
-                .font(.custom("Manrope-Bold", size: 20))
-                .foregroundColor(.primary)
-                .padding(.horizontal, 20)
+            HStack {
+                Rectangle()
+                    .fill(Color.orange)
+                    .frame(width: 3, height: 16)
+                
+                Text("MESSAGE COMPOSER")
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .tracking(1)
+            }
+            .padding(.horizontal, 20)
             
             VStack(alignment: .leading, spacing: 8) {
                 ZStack(alignment: .topLeading) {
@@ -685,17 +801,34 @@ struct CustomMessageSection: View {
                 isTextEditorFocused = false
                 compressMessage()
             }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .font(.system(size: 18))
-                    Text("Compress Message")
-                        .font(.system(size: 17, weight: .semibold))
+                HStack(spacing: 10) {
+                    Image(systemName: "arrow.down.square.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                    Text("COMPRESS & OPTIMIZE")
+                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .tracking(0.5)
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(userMessage.isEmpty ? Color.gray.opacity(0.5) : Color.blue)
-                .cornerRadius(12)
+                .padding(.vertical, 14)
+                .background(
+                    Group {
+                        if userMessage.isEmpty {
+                            Color.gray.opacity(0.5)
+                        } else {
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.blue, Color.blue.opacity(0.85)]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        }
+                    }
+                )
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                )
             }
             .padding(.horizontal, 20)
             .disabled(userMessage.isEmpty)
@@ -713,10 +846,17 @@ struct CompressedOutputSection: View {
         Group {
             if !compressedMessage.isEmpty {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Compressed Message")
-                        .font(.custom("Manrope-Bold", size: 20))
-                        .foregroundColor(.primary)
-                        .padding(.horizontal, 20)
+                    HStack {
+                        Rectangle()
+                            .fill(Color.green)
+                            .frame(width: 3, height: 16)
+                        
+                        Text("OPTIMIZED OUTPUT")
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundColor(.secondary)
+                            .tracking(1)
+                    }
+                    .padding(.horizontal, 20)
                     
                     CompressedContent(
                         compressedMessage: compressedMessage,
@@ -781,35 +921,51 @@ struct CompressedContent: View {
                 }
             }
             
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 Button(action: {
                     UIPasteboard.general.string = compressedMessage
                 }) {
                     HStack(spacing: 6) {
                         Image(systemName: "doc.on.doc")
-                            .font(.system(size: 16))
-                        Text("Copy")
-                            .font(.system(size: 16, weight: .medium))
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("COPY")
+                            .font(.system(size: 13, weight: .bold, design: .monospaced))
+                            .tracking(0.5)
                     }
                     .foregroundColor(.primary)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
+                    .padding(.vertical, 12)
                     .background(Color(.systemGray5))
-                    .cornerRadius(10)
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color(.systemGray4), lineWidth: 1)
+                    )
                 }
                 
                 Button(action: sendSMS) {
                     HStack(spacing: 6) {
                         Image(systemName: "paperplane.fill")
-                            .font(.system(size: 16))
-                        Text("Send")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("TRANSMIT")
+                            .font(.system(size: 13, weight: .bold, design: .monospaced))
+                            .tracking(0.5)
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color.blue)
-                    .cornerRadius(10)
+                    .padding(.vertical, 12)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.green, Color.green.opacity(0.85)]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
                 }
             }
         }
@@ -945,6 +1101,16 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        // Show settings info
+                    }) {
+                        Image(systemName: "info.circle")
+                            .foregroundColor(.primary)
+                    }
+                }
+            }
         }
     }
 }
@@ -956,181 +1122,33 @@ struct FireAlertView: View {
     @State private var isCheckingFire = false
     @State private var fireAlertMessage = ""
     @State private var showAlert = false
-    @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194),
-        span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+    @State private var cameraPosition: MapCameraPosition = .region(
+        MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194),
+            span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+        )
     )
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
-                    // Header
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Fire Alert")
-                            .font(.custom("Manrope-Bold", size: 32))
-                            .foregroundColor(.primary)
-                        
-                        Text("Check for wildfires near your location")
-                            .font(.system(size: 16))
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
+                    FireAlertHeader()
                     
-                    // Map Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Your Location")
-                            .font(.custom("Manrope-Bold", size: 20))
-                            .foregroundColor(.primary)
-                            .padding(.horizontal, 20)
-                        
-                        ZStack(alignment: .topTrailing) {
-                            Map(coordinateRegion: $region, showsUserLocation: true, userTrackingMode: .constant(.follow))
-                                .frame(height: 300)
-                                .cornerRadius(16)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color(.systemGray4), lineWidth: 1)
-                                )
-                            
-                            // Recenter button
-                            Button(action: {
-                                if let location = locationManager.location {
-                                    withAnimation {
-                                        region.center = location.coordinate
-                                    }
-                                }
-                            }) {
-                                Image(systemName: "location.fill")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.blue)
-                                    .padding(10)
-                                    .background(Color(.systemBackground))
-                                    .clipShape(Circle())
-                                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-                            }
-                            .padding(12)
-                        }
-                        .padding(.horizontal, 20)
-                        
-                        if let location = locationManager.location {
-                            HStack(spacing: 6) {
-                                Image(systemName: "mappin.circle.fill")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.blue)
-                                Text(String(format: "%.4f, %.4f", location.coordinate.latitude, location.coordinate.longitude))
-                                    .font(.system(size: 14, design: .monospaced))
-                                    .foregroundColor(.secondary)
-                            }
-                            .padding(.horizontal, 20)
-                        }
-                    }
+                    FireAlertMapSection(
+                        cameraPosition: $cameraPosition,
+                        locationManager: locationManager
+                    )
                     
-                    // Check Fire Alert Section
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Fire Check")
-                            .font(.custom("Manrope-Bold", size: 20))
-                            .foregroundColor(.primary)
-                            .padding(.horizontal, 20)
-                        
-                        VStack(spacing: 12) {
-                            Button(action: {
-                                checkFireAlert()
-                            }) {
-                                HStack(spacing: 8) {
-                                    if isCheckingFire {
-                                        ProgressView()
-                                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                            .scaleEffect(0.9)
-                                    } else {
-                                        Image(systemName: "flame.fill")
-                                            .font(.system(size: 18))
-                                    }
-                                    Text(isCheckingFire ? "Checking..." : "Check for Wildfires")
-                                        .font(.system(size: 17, weight: .semibold))
-                                }
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [Color.orange, Color.red]),
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .cornerRadius(12)
-                            }
-                            .disabled(isCheckingFire || locationManager.location == nil)
-                            .opacity((isCheckingFire || locationManager.location == nil) ? 0.6 : 1.0)
-                            
-                            if locationManager.location == nil {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "info.circle")
-                                        .font(.system(size: 14))
-                                    Text("Enable location services to check for fires")
-                                        .font(.system(size: 14))
-                                }
-                                .foregroundColor(.secondary)
-                            }
-                            
-                            if !fireAlertMessage.isEmpty {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    HStack {
-                                        Image(systemName: showAlert ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
-                                            .font(.system(size: 16))
-                                            .foregroundColor(showAlert ? .orange : .green)
-                                        Text(showAlert ? "Fire Alert" : "All Clear")
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(showAlert ? .orange : .green)
-                                    }
-                                    
-                                    Text(fireAlertMessage)
-                                        .font(.system(size: 15))
-                                        .foregroundColor(.primary)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                                .padding(16)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(showAlert ? Color.orange.opacity(0.1) : Color.green.opacity(0.1))
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(showAlert ? Color.orange.opacity(0.3) : Color.green.opacity(0.3), lineWidth: 1)
-                                )
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                    }
+                    FireAlertDetectionSection(
+                        isCheckingFire: $isCheckingFire,
+                        fireAlertMessage: $fireAlertMessage,
+                        showAlert: $showAlert,
+                        locationManager: locationManager,
+                        checkFireAlert: checkFireAlert
+                    )
                     
-                    // Info Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("How It Works")
-                            .font(.custom("Manrope-Bold", size: 20))
-                            .foregroundColor(.primary)
-                            .padding(.horizontal, 20)
-                        
-                        VStack(alignment: .leading, spacing: 12) {
-                            InfoRow(
-                                icon: "1.circle.fill",
-                                text: "We check NASA's FIRMS database for active fires",
-                                color: .blue
-                            )
-                            InfoRow(
-                                icon: "2.circle.fill",
-                                text: "Analyzes fires within 50km of your location",
-                                color: .blue
-                            )
-                            InfoRow(
-                                icon: "3.circle.fill",
-                                text: "Provides real-time wildfire risk assessment",
-                                color: .blue
-                            )
-                        }
-                        .padding(.horizontal, 20)
-                    }
+                    FireAlertInfoSection()
                     
                     Spacer(minLength: 20)
                 }
@@ -1138,17 +1156,37 @@ struct FireAlertView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        // Show fire alert info
+                    }) {
+                        Image(systemName: "info.circle")
+                            .foregroundColor(.primary)
+                    }
+                }
+            }
         }
         .onAppear {
             locationManager.requestLocation()
             if let location = locationManager.location {
-                region.center = location.coordinate
+                cameraPosition = .region(
+                    MKCoordinateRegion(
+                        center: location.coordinate,
+                        span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+                    )
+                )
             }
         }
-        .onChange(of: locationManager.location) { location in
-            if let location = location {
+        .onChange(of: locationManager.location) { oldValue, newValue in
+            if let location = newValue {
                 withAnimation {
-                    region.center = location.coordinate
+                    cameraPosition = .region(
+                        MKCoordinateRegion(
+                            center: location.coordinate,
+                            span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+                        )
+                    )
                 }
             }
         }
@@ -1173,6 +1211,239 @@ struct FireAlertView: View {
             // This is a placeholder - in reality, you'd parse the SMS response
             showAlert = false
             fireAlertMessage = "Fire check sent! You'll receive an SMS response with the fire alert status for your location."
+        }
+    }
+}
+
+// MARK: - Fire Alert Helper Views
+struct FireAlertHeader: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 8) {
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.orange)
+                
+                Text("FIRE ALERT")
+                    .font(.system(size: 15, weight: .bold, design: .monospaced))
+                    .foregroundColor(.primary)
+                    .tracking(1.5)
+            }
+            
+            Text("Wildfire Detection System")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.secondary)
+                .textCase(.uppercase)
+                .tracking(0.5)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(Color(.secondarySystemGroupedBackground))
+    }
+}
+
+struct FireAlertMapSection: View {
+    @Binding var cameraPosition: MapCameraPosition
+    @ObservedObject var locationManager: LocationManager
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Rectangle()
+                    .fill(Color.orange)
+                    .frame(width: 3, height: 16)
+                
+                Text("LOCATION TRACKING")
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .tracking(1)
+            }
+            .padding(.horizontal, 20)
+            
+            ZStack(alignment: .topTrailing) {
+                Map(position: $cameraPosition) {
+                    if let location = locationManager.location {
+                        UserAnnotation()
+                    }
+                }
+                .mapStyle(.standard)
+                .frame(height: 300)
+                .cornerRadius(16)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(.systemGray4), lineWidth: 1)
+                )
+                
+                // Recenter button
+                Button(action: {
+                    if let location = locationManager.location {
+                        withAnimation {
+                            cameraPosition = .region(
+                                MKCoordinateRegion(
+                                    center: location.coordinate,
+                                    span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+                                )
+                            )
+                        }
+                    }
+                }) {
+                    Image(systemName: "location.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(.blue)
+                        .padding(10)
+                        .background(Color(.systemBackground))
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                }
+                .padding(12)
+            }
+            .padding(.horizontal, 20)
+            
+            if let location = locationManager.location {
+                HStack(spacing: 6) {
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.blue)
+                    Text(String(format: "%.4f, %.4f", location.coordinate.latitude, location.coordinate.longitude))
+                        .font(.system(size: 14, design: .monospaced))
+                        .foregroundColor(.secondary)
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+    }
+}
+
+struct FireAlertDetectionSection: View {
+    @Binding var isCheckingFire: Bool
+    @Binding var fireAlertMessage: String
+    @Binding var showAlert: Bool
+    @ObservedObject var locationManager: LocationManager
+    let checkFireAlert: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Rectangle()
+                    .fill(Color.red)
+                    .frame(width: 3, height: 16)
+                
+                Text("FIRE DETECTION")
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .tracking(1)
+            }
+            .padding(.horizontal, 20)
+            
+            VStack(spacing: 12) {
+                Button(action: checkFireAlert) {
+                    HStack(spacing: 8) {
+                        if isCheckingFire {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(0.9)
+                        } else {
+                            Image(systemName: "flame.fill")
+                                .font(.system(size: 18))
+                        }
+                        Text(isCheckingFire ? "CHECKING..." : "CHECK FOR WILDFIRES")
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .tracking(0.5)
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.orange, Color.red]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
+                }
+                .disabled(isCheckingFire || locationManager.location == nil)
+                .opacity((isCheckingFire || locationManager.location == nil) ? 0.6 : 1.0)
+                
+                if locationManager.location == nil {
+                    HStack(spacing: 8) {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 14))
+                        Text("Enable location services to check for fires")
+                            .font(.system(size: 14))
+                    }
+                    .foregroundColor(.secondary)
+                }
+                
+                if !fireAlertMessage.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: showAlert ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(showAlert ? .orange : .green)
+                            Text(showAlert ? "FIRE ALERT" : "ALL CLEAR")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(showAlert ? .orange : .green)
+                        }
+                        
+                        Text(fireAlertMessage)
+                            .font(.system(size: 15))
+                            .foregroundColor(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(showAlert ? Color.orange.opacity(0.1) : Color.green.opacity(0.1))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(showAlert ? Color.orange.opacity(0.3) : Color.green.opacity(0.3), lineWidth: 1)
+                    )
+                }
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+}
+
+struct FireAlertInfoSection: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Rectangle()
+                    .fill(Color.blue)
+                    .frame(width: 3, height: 16)
+                
+                Text("SYSTEM INFO")
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .tracking(1)
+            }
+            .padding(.horizontal, 20)
+            
+            VStack(alignment: .leading, spacing: 12) {
+                InfoRow(
+                    icon: "1.circle.fill",
+                    text: "We check NASA's FIRMS database for active fires",
+                    color: .blue
+                )
+                InfoRow(
+                    icon: "2.circle.fill",
+                    text: "Analyzes fires within 50km of your location",
+                    color: .blue
+                )
+                InfoRow(
+                    icon: "3.circle.fill",
+                    text: "Provides real-time wildfire risk assessment",
+                    color: .blue
+                )
+            }
+            .padding(.horizontal, 20)
         }
     }
 }
