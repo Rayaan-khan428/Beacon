@@ -250,10 +250,6 @@ def compress_message(message):
     # Remove extra spaces
     compressed = ' '.join(compressed.split())
     
-    # Truncate if still too long (limit is 250 chars)
-    if len(compressed) > 250:
-        compressed = compressed[:247] + "..."
-    
     return compressed
 
 

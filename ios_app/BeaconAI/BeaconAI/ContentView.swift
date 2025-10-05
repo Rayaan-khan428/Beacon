@@ -118,11 +118,6 @@ struct ContentView: View {
             .filter { !$0.isEmpty }
             .joined(separator: " ")
         
-        // Truncate if too long
-        if compressed.count > 250 {
-            compressed = String(compressed.prefix(247)) + "..."
-        }
-        
         compressedMessage = compressed
         charactersSaved = userMessage.count - compressed.count
     }
