@@ -38,6 +38,8 @@ struct OnboardingView: View {
 
 // MARK: - Slide 1: The Problem
 struct OnboardingSlide1: View {
+    @State private var isVisible = false
+    
     var body: some View {
         ZStack {
             Image("slide-1")
@@ -88,14 +90,23 @@ struct OnboardingSlide1: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 80)
+                .opacity(isVisible ? 1 : 0)
+                .offset(y: isVisible ? 0 : 20)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.8)) {
+                isVisible = true
+            }
         }
     }
 }
 
 // MARK: - Slide 3: How It Works
 struct OnboardingSlide3: View {
+    @State private var isVisible = false
+    
     var body: some View {
         ZStack {
             Image("slide-3")
@@ -137,8 +148,15 @@ struct OnboardingSlide3: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 80)
+                .opacity(isVisible ? 1 : 0)
+                .offset(y: isVisible ? 0 : 20)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.8)) {
+                isVisible = true
+            }
         }
     }
 }
@@ -146,6 +164,8 @@ struct OnboardingSlide3: View {
 
 // MARK: - Slide 5: Use Cases
 struct OnboardingSlide5: View {
+    @State private var isVisible = false
+    
     var body: some View {
         ZStack {
             Image("slide-4")
@@ -206,8 +226,15 @@ struct OnboardingSlide5: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 80)
+                .opacity(isVisible ? 1 : 0)
+                .offset(y: isVisible ? 0 : 20)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.8)) {
+                isVisible = true
+            }
         }
     }
 }
@@ -216,6 +243,7 @@ struct OnboardingSlide5: View {
 // MARK: - Slide 5: Get Started
 struct OnboardingSlide7: View {
     @Binding var hasCompletedOnboarding: Bool
+    @State private var isVisible = false
     
     var body: some View {
         ZStack {
@@ -264,7 +292,9 @@ struct OnboardingSlide7: View {
                     
                     // Get Started Button
                     Button(action: {
-                        hasCompletedOnboarding = true
+                        withAnimation {
+                            hasCompletedOnboarding = false
+                        }
                     }) {
                         HStack(spacing: 10) {
                             Text("Start Using Beacon")
@@ -283,8 +313,15 @@ struct OnboardingSlide7: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 80)
+                .opacity(isVisible ? 1 : 0)
+                .offset(y: isVisible ? 0 : 20)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.8)) {
+                isVisible = true
+            }
         }
     }
 }

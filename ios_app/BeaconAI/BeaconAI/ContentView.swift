@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreLocation
+import MapKit
 
 struct ContentView: View {
     @State private var selectedTab: Tab = .question
@@ -15,6 +16,7 @@ struct ContentView: View {
     enum Tab {
         case weather
         case question
+        case fireAlert
         case settings
     }
     
@@ -25,6 +27,10 @@ struct ContentView: View {
                 switch selectedTab {
                 case .weather:
                     WeatherView()
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .leading).combined(with: .opacity),
+                            removal: .move(edge: .trailing).combined(with: .opacity)
+                        ))
                 case .question:
                     QuestionView(
                         userMessage: $userMessage,
@@ -35,10 +41,19 @@ struct ContentView: View {
                         compressMessage: compressMessage,
                         sendSMS: sendSMS
                     )
+                    .transition(.opacity)
+                case .fireAlert:
+                    FireAlertView(twilioNumber: twilioNumber)
+                        .transition(.opacity)
                 case .settings:
                     SettingsView(twilioNumber: twilioNumber)
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
                 }
             }
+            .animation(.easeInOut(duration: 0.3), value: selectedTab)
             .padding(.bottom, 90) // Space for bottom nav
             
             // Bottom Navigation
@@ -246,15 +261,48 @@ struct PillNavigationBar: View {
                 selectedTab = .question
             }
             
+            NavButton(title: "Fire Alert", icon: "flame.fill", isSelected: selectedTab == .fireAlert) {
+                selectedTab = .fireAlert
+            }
+            
             NavButton(title: "Settings", icon: "gearshape.fill", isSelected: selectedTab == .settings) {
                 selectedTab = .settings
             }
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 8)
-        .background(Color(.systemBackground))
+        .background(
+            ZStack {
+                Color(.systemBackground)
+                
+                // Subtle gradient overlay
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.blue.opacity(0.03),
+                        Color.blue.opacity(0.01)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+        )
         .cornerRadius(30)
-        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: -2)
+        .overlay(
+            RoundedRectangle(cornerRadius: 30)
+                .stroke(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.blue.opacity(0.2),
+                            Color.blue.opacity(0.1)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
+        .shadow(color: .blue.opacity(0.08), radius: 12, x: 0, y: -3)
+        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: -2)
         .padding(.horizontal, 20)
         .padding(.bottom, 10)
     }
@@ -267,20 +315,28 @@ struct NavButton: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                action()
+            }
+        }) {
             VStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.system(size: 20))
+                    .scaleEffect(isSelected ? 1.1 : 1.0)
                 Text(title)
                     .font(.caption)
-                    .fontWeight(.medium)
+                    .fontWeight(isSelected ? .semibold : .medium)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
-            .background(isSelected ? Color.blue : Color.clear)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(isSelected ? Color.blue : Color.clear)
+            )
             .foregroundColor(isSelected ? .white : .gray)
-            .cornerRadius(20)
         }
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
 }
 
@@ -474,14 +530,13 @@ struct QuestionView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(alignment: .leading, spacing: 28) {
                     HeaderSection()
                     QuickActionsSection(
                         userMessage: $userMessage,
                         compressMessage: compressMessage,
                         sendSMS: sendSMS
                     )
-                    Divider().padding(.horizontal)
                     CustomMessageSection(
                         userMessage: $userMessage,
                         compressMessage: compressMessage
@@ -494,7 +549,9 @@ struct QuestionView: View {
                     )
                     Spacer(minLength: 20)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .background(Color(.systemGroupedBackground))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -502,6 +559,7 @@ struct QuestionView: View {
                         showingInstructions = true
                     }) {
                         Image(systemName: "info.circle")
+                            .foregroundColor(.primary)
                     }
                 }
             }
@@ -522,19 +580,18 @@ struct QuestionView: View {
 // MARK: - Question View Sub-Components
 struct HeaderSection: View {
     var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "antenna.radiowaves.left.and.right")
-                .font(.system(size: 50))
-                .foregroundColor(.blue)
+        VStack(alignment: .leading, spacing: 4) {
+            Text("BeaconAI")
+                .font(.custom("Manrope-Bold", size: 32))
+                .foregroundColor(.primary)
             
-            Text("Emergency AI")
-                .font(.custom("Manrope-Bold", size: 28))
-            
-            Text("Satellite-optimized intelligence")
-                .font(.subheadline)
+            Text("Emergency intelligence via satellite")
+                .font(.system(size: 16))
                 .foregroundColor(.secondary)
         }
-        .padding(.top, 20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
     }
 }
 
@@ -554,16 +611,13 @@ struct QuickActionsSection: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "bolt.fill")
-                    .foregroundColor(.orange)
-                Text("Quick Actions")
-                    .font(.custom("Manrope-Bold", size: 18))
-            }
-            .padding(.horizontal)
+            Text("Quick Actions")
+                .font(.custom("Manrope-Bold", size: 20))
+                .foregroundColor(.primary)
+                .padding(.horizontal, 20)
             
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+                HStack(spacing: 10) {
                     ForEach(commonPrompts) { prompt in
                         CommonPromptCard(prompt: prompt) {
                             userMessage = prompt.message
@@ -574,7 +628,7 @@ struct QuickActionsSection: View {
                         }
                     }
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, 20)
             }
         }
     }
@@ -586,77 +640,64 @@ struct CustomMessageSection: View {
     @FocusState private var isTextEditorFocused: Bool
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "pencil")
-                    .foregroundColor(.blue)
-                Text("Custom Message")
-                    .font(.custom("Manrope-Bold", size: 18))
-            }
-            .padding(.horizontal)
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Your Message")
+                .font(.custom("Manrope-Bold", size: 20))
+                .foregroundColor(.primary)
+                .padding(.horizontal, 20)
             
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 8) {
                 ZStack(alignment: .topLeading) {
                     if userMessage.isEmpty {
-                        Text("Type your emergency question...")
-                            .foregroundColor(.gray.opacity(0.5))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 16)
+                        Text("What do you need help with?")
+                            .foregroundColor(.secondary.opacity(0.6))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 12)
                     }
                     
                     TextEditor(text: $userMessage)
-                        .frame(height: 120)
-                        .padding(8)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(10)
+                        .frame(height: 100)
+                        .padding(4)
+                        .scrollContentBackground(.hidden)
+                        .background(Color(.systemBackground))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(isTextEditorFocused ? Color.blue : Color(.systemGray4), lineWidth: 1.5)
                         )
                         .focused($isTextEditorFocused)
                 }
+                .background(Color(.systemBackground))
+                .cornerRadius(12)
                 
-                HStack {
-                    Text("Type your emergency question or coordinates")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
-                    
-                    if isTextEditorFocused {
-                        Button(action: {
-                            isTextEditorFocused = false
-                        }) {
-                            Text("Done")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.blue)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(8)
-                        }
+                if isTextEditorFocused {
+                    Button(action: {
+                        isTextEditorFocused = false
+                    }) {
+                        Text("Done")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.blue)
                     }
                 }
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 20)
             
             Button(action: {
                 isTextEditorFocused = false
                 compressMessage()
             }) {
-                HStack {
+                HStack(spacing: 8) {
                     Image(systemName: "arrow.down.circle.fill")
-                    Text("Compress for Satellite")
+                        .font(.system(size: 18))
+                    Text("Compress Message")
+                        .font(.system(size: 17, weight: .semibold))
                 }
-                .font(.headline)
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .padding()
-                .background(userMessage.isEmpty ? Color.gray : Color.blue)
+                .padding(.vertical, 16)
+                .background(userMessage.isEmpty ? Color.gray.opacity(0.5) : Color.blue)
                 .cornerRadius(12)
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 20)
             .disabled(userMessage.isEmpty)
         }
     }
@@ -671,8 +712,12 @@ struct CompressedOutputSection: View {
     var body: some View {
         Group {
             if !compressedMessage.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    CompressedHeader(compressedMessage: compressedMessage)
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Compressed Message")
+                        .font(.custom("Manrope-Bold", size: 20))
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 20)
+                    
                     CompressedContent(
                         compressedMessage: compressedMessage,
                         charactersSaved: charactersSaved,
@@ -680,10 +725,6 @@ struct CompressedOutputSection: View {
                         sendSMS: sendSMS
                     )
                 }
-                .padding(.vertical, 12)
-                .background(Color.green.opacity(0.05))
-                .cornerRadius(16)
-                .padding(.horizontal)
             }
         }
     }
@@ -694,20 +735,18 @@ struct CompressedHeader: View {
     
     var body: some View {
         HStack {
-            Image(systemName: "checkmark.seal.fill")
-                .foregroundColor(.green)
-            Text("Ready to Send")
-                .font(.custom("Manrope-Bold", size: 18))
+            Text("\(compressedMessage.count) characters")
+                .font(.system(size: 14))
+                .foregroundColor(.secondary)
             Spacer()
-            Text("\(compressedMessage.count) chars")
-                .font(.caption)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.green.opacity(0.2))
-                .foregroundColor(.green)
-                .cornerRadius(8)
+            HStack(spacing: 4) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 12))
+                Text("Ready")
+                    .font(.system(size: 13, weight: .medium))
+            }
+            .foregroundColor(.green)
         }
-        .padding(.horizontal)
     }
 }
 
@@ -718,99 +757,63 @@ struct CompressedContent: View {
     let sendSMS: () -> Void
     
     var body: some View {
-        VStack(spacing: 12) {
-            HStack {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                CompressedHeader(compressedMessage: compressedMessage)
+                
                 Text(compressedMessage)
-                    .font(.system(.body, design: .monospaced))
+                    .font(.system(size: 15, design: .monospaced))
                     .foregroundColor(.primary)
-                Spacer()
-            }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(.systemGray6))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [5]))
-                            .foregroundColor(.green.opacity(0.5))
-                    )
-            )
-            
-            if charactersSaved > 0 {
-                CharacterSavedBadge(
-                    charactersSaved: charactersSaved,
-                    userMessage: userMessage
-                )
-            }
-            
-            ActionButtons(
-                compressedMessage: compressedMessage,
-                sendSMS: sendSMS
-            )
-        }
-        .padding(.horizontal)
-    }
-}
-
-struct CharacterSavedBadge: View {
-    let charactersSaved: Int
-    let userMessage: String
-    
-    var body: some View {
-        HStack {
-            Image(systemName: "chart.line.downtrend.xyaxis")
-                .foregroundColor(.green)
-            Text("Saved \(charactersSaved) characters (\(Int((Double(charactersSaved) / Double(userMessage.count)) * 100))%)")
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundColor(.green)
-        }
-    }
-}
-
-struct ActionButtons: View {
-    let compressedMessage: String
-    let sendSMS: () -> Void
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            Button(action: {
-                UIPasteboard.general.string = compressedMessage
-            }) {
-                HStack {
-                    Image(systemName: "doc.on.doc")
-                    Text("Copy")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(12)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(10)
+                
+                if charactersSaved > 0 {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.down.circle.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(.green)
+                        Text("Saved \(charactersSaved) characters")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                    }
                 }
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.gray)
-                .cornerRadius(10)
             }
             
-            Button(action: sendSMS) {
-                HStack {
-                    Image(systemName: "paperplane.fill")
-                    Text("Send Now")
+            HStack(spacing: 12) {
+                Button(action: {
+                    UIPasteboard.general.string = compressedMessage
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "doc.on.doc")
+                            .font(.system(size: 16))
+                        Text("Copy")
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                    .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color(.systemGray5))
+                    .cornerRadius(10)
                 }
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color.blue, Color.blue.opacity(0.8)]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .cornerRadius(10)
-                .shadow(color: .blue.opacity(0.3), radius: 5, x: 0, y: 3)
+                
+                Button(action: sendSMS) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "paperplane.fill")
+                            .font(.system(size: 16))
+                        Text("Send")
+                            .font(.system(size: 16, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color.blue)
+                    .cornerRadius(10)
+                }
             }
         }
+        .padding(.horizontal, 20)
     }
 }
 
@@ -942,6 +945,254 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+        }
+    }
+}
+
+// MARK: - Fire Alert View
+struct FireAlertView: View {
+    let twilioNumber: String
+    @StateObject private var locationManager = LocationManager()
+    @State private var isCheckingFire = false
+    @State private var fireAlertMessage = ""
+    @State private var showAlert = false
+    @State private var region = MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194),
+        span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+    )
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 28) {
+                    // Header
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Fire Alert")
+                            .font(.custom("Manrope-Bold", size: 32))
+                            .foregroundColor(.primary)
+                        
+                        Text("Check for wildfires near your location")
+                            .font(.system(size: 16))
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    
+                    // Map Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Your Location")
+                            .font(.custom("Manrope-Bold", size: 20))
+                            .foregroundColor(.primary)
+                            .padding(.horizontal, 20)
+                        
+                        ZStack(alignment: .topTrailing) {
+                            Map(coordinateRegion: $region, showsUserLocation: true, userTrackingMode: .constant(.follow))
+                                .frame(height: 300)
+                                .cornerRadius(16)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color(.systemGray4), lineWidth: 1)
+                                )
+                            
+                            // Recenter button
+                            Button(action: {
+                                if let location = locationManager.location {
+                                    withAnimation {
+                                        region.center = location.coordinate
+                                    }
+                                }
+                            }) {
+                                Image(systemName: "location.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.blue)
+                                    .padding(10)
+                                    .background(Color(.systemBackground))
+                                    .clipShape(Circle())
+                                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                            }
+                            .padding(12)
+                        }
+                        .padding(.horizontal, 20)
+                        
+                        if let location = locationManager.location {
+                            HStack(spacing: 6) {
+                                Image(systemName: "mappin.circle.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.blue)
+                                Text(String(format: "%.4f, %.4f", location.coordinate.latitude, location.coordinate.longitude))
+                                    .font(.system(size: 14, design: .monospaced))
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.horizontal, 20)
+                        }
+                    }
+                    
+                    // Check Fire Alert Section
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Fire Check")
+                            .font(.custom("Manrope-Bold", size: 20))
+                            .foregroundColor(.primary)
+                            .padding(.horizontal, 20)
+                        
+                        VStack(spacing: 12) {
+                            Button(action: {
+                                checkFireAlert()
+                            }) {
+                                HStack(spacing: 8) {
+                                    if isCheckingFire {
+                                        ProgressView()
+                                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                            .scaleEffect(0.9)
+                                    } else {
+                                        Image(systemName: "flame.fill")
+                                            .font(.system(size: 18))
+                                    }
+                                    Text(isCheckingFire ? "Checking..." : "Check for Wildfires")
+                                        .font(.system(size: 17, weight: .semibold))
+                                }
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color.orange, Color.red]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .cornerRadius(12)
+                            }
+                            .disabled(isCheckingFire || locationManager.location == nil)
+                            .opacity((isCheckingFire || locationManager.location == nil) ? 0.6 : 1.0)
+                            
+                            if locationManager.location == nil {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "info.circle")
+                                        .font(.system(size: 14))
+                                    Text("Enable location services to check for fires")
+                                        .font(.system(size: 14))
+                                }
+                                .foregroundColor(.secondary)
+                            }
+                            
+                            if !fireAlertMessage.isEmpty {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Image(systemName: showAlert ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                                            .font(.system(size: 16))
+                                            .foregroundColor(showAlert ? .orange : .green)
+                                        Text(showAlert ? "Fire Alert" : "All Clear")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(showAlert ? .orange : .green)
+                                    }
+                                    
+                                    Text(fireAlertMessage)
+                                        .font(.system(size: 15))
+                                        .foregroundColor(.primary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                .padding(16)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(showAlert ? Color.orange.opacity(0.1) : Color.green.opacity(0.1))
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(showAlert ? Color.orange.opacity(0.3) : Color.green.opacity(0.3), lineWidth: 1)
+                                )
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                    
+                    // Info Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("How It Works")
+                            .font(.custom("Manrope-Bold", size: 20))
+                            .foregroundColor(.primary)
+                            .padding(.horizontal, 20)
+                        
+                        VStack(alignment: .leading, spacing: 12) {
+                            InfoRow(
+                                icon: "1.circle.fill",
+                                text: "We check NASA's FIRMS database for active fires",
+                                color: .blue
+                            )
+                            InfoRow(
+                                icon: "2.circle.fill",
+                                text: "Analyzes fires within 50km of your location",
+                                color: .blue
+                            )
+                            InfoRow(
+                                icon: "3.circle.fill",
+                                text: "Provides real-time wildfire risk assessment",
+                                color: .blue
+                            )
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                    
+                    Spacer(minLength: 20)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(Color(.systemGroupedBackground))
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .onAppear {
+            locationManager.requestLocation()
+            if let location = locationManager.location {
+                region.center = location.coordinate
+            }
+        }
+        .onChange(of: locationManager.location) { location in
+            if let location = location {
+                withAnimation {
+                    region.center = location.coordinate
+                }
+            }
+        }
+    }
+    
+    private func checkFireAlert() {
+        guard let location = locationManager.location else { return }
+        
+        isCheckingFire = true
+        fireAlertMessage = ""
+        
+        let message = "wildfire \(location.coordinate.latitude), \(location.coordinate.longitude)"
+        let sms = "sms:\(twilioNumber)&body=\(message.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+        
+        if let url = URL(string: sms) {
+            UIApplication.shared.open(url)
+        }
+        
+        // Simulate response (in real app, you'd wait for SMS response)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            isCheckingFire = false
+            // This is a placeholder - in reality, you'd parse the SMS response
+            showAlert = false
+            fireAlertMessage = "Fire check sent! You'll receive an SMS response with the fire alert status for your location."
+        }
+    }
+}
+
+struct InfoRow: View {
+    let icon: String
+    let text: String
+    let color: Color
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 18))
+                .foregroundColor(color)
+                .frame(width: 24)
+            
+            Text(text)
+                .font(.system(size: 15))
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
