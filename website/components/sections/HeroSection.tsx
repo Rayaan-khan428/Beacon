@@ -1,166 +1,187 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { SparklesCore } from '@/components/ui/sparkles'
-import { useState, useEffect } from 'react'
+import { motion, useScroll, useTransform } from 'framer-motion'
+import { Satellite, Zap, Shield, ArrowRight } from 'lucide-react'
+import { useRef } from 'react'
 
 export default function HeroSection() {
-  const [originalText, setOriginalText] = useState('What should I do for a severe snake bite emergency?')
-  const [compressedText, setCompressedText] = useState('What shld I do 4 severe snake bite emerg?')
-
-  useEffect(() => {
-    // Simulate typing effect
-    const timer = setInterval(() => {
-      setOriginalText((prev) => {
-        const chars = 'What should I do for a severe snake bite emergency?'
-        const compressed = 'What shld I do 4 severe snake bite emerg?'
-        return chars
-      })
-    }, 3000)
-    return () => clearInterval(timer)
-  }, [])
+  const ref = useRef(null)
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start start", "end start"]
+  })
+  
+  const y = useTransform(scrollYProgress, [0, 1], ['0%', '50%'])
+  const opacity = useTransform(scrollYProgress, [0, 1], [1, 0])
 
   return (
-    <section className="relative h-screen w-full flex items-center justify-center overflow-hidden">
-      {/* Background Image with Overlay */}
-      <div className="absolute inset-0 z-0">
-        <div 
+    <section ref={ref} className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white">
+      {/* Background Image with Parallax */}
+      <motion.div 
+        style={{ y, opacity }}
+        className="absolute inset-0 z-0"
+      >
+        <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage: 'url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=2070)',
+            filter: 'brightness(0.4) contrast(1.1)',
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-beacon-dark/80 via-beacon-dark/60 to-beacon-dark"></div>
-      </div>
+        <div className="absolute inset-0 bg-hero-image"></div>
+      </motion.div>
 
-      {/* Sparkles Effect */}
-      <SparklesCore
-        id="hero-sparkles"
-        background="transparent"
-        minSize={0.4}
-        maxSize={1.4}
-        particleDensity={80}
-        className="w-full h-full"
-        particleColor="#FFFFFF"
-      />
-
-      {/* Grid Pattern */}
-      <div className="absolute inset-0 grid-pattern opacity-30 z-10"></div>
+      {/* Floating Background Images */}
+      <motion.div 
+        style={{ y: useTransform(scrollYProgress, [0, 1], ['0%', '30%']) }}
+        className="absolute top-20 right-10 w-64 h-64 opacity-10"
+      >
+        <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=400" alt="" className="w-full h-full object-cover" style={{ borderRadius: '2px 32px 2px 32px' }} />
+      </motion.div>
 
       {/* Content */}
-      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div className="relative z-10 section-container text-center">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         >
-          {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-blue-500/30 mb-8"
-          >
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-            </span>
-            <span className="text-sm text-blue-300">Built for Real Emergencies</span>
-          </motion.div>
+          {/* Status Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 mb-8 badge-active" style={{ borderRadius: '2px' }}>
+            <span className="status-dot status-online"></span>
+            <span className="text-sm font-semibold">System Operational • 99.7% Uptime</span>
+          </div>
 
           {/* Main Headline */}
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight">
-            <span className="block text-white">Your AI Lifeline</span>
-            <span className="block gradient-text">When Cellular Fails</span>
+          <h1 className="heading-xl mb-6 max-w-5xl mx-auto">
+            Your AI Lifeline When
+            <br />
+            <span className="text-beacon-600">Cellular Networks Fail</span>
           </h1>
 
-          {/* Subheadline */}
-          <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto">
-            Emergency intelligence via satellite. Compressed. Smart. Life-saving.
+          {/* Subtitle */}
+          <p className="subheading mx-auto mb-12">
+            Beacon delivers AI-powered weather intelligence, wildfire alerts, and emergency guidance 
+            optimized for satellite messaging. Stay informed and safe, even when you're off the grid.
           </p>
 
-          {/* Compression Demo */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.8 }}
-            className="max-w-2xl mx-auto mb-12 glass rounded-2xl p-6 border border-white/10"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-gray-400">Original Message</span>
-              <span className="text-sm font-mono text-red-400">{originalText.length} chars</span>
-            </div>
-            <p className="text-left text-gray-200 mb-4 font-mono text-sm">
-              {originalText}
-            </p>
-            
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-600"></div>
+          {/* Demo Box with Image Background */}
+          <div className="max-w-4xl mx-auto mb-12">
+            <div className="relative bg-white p-8 shadow-large border-2 border-beacon-100" style={{ borderRadius: '2px 16px 2px 16px' }}>
+              {/* Small background image */}
+              <div className="absolute top-0 right-0 w-48 h-48 opacity-5 overflow-hidden">
+                <img src="https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?q=80&w=400" alt="" className="w-full h-full object-cover" />
               </div>
-              <div className="relative flex justify-center">
-                <span className="bg-beacon-dark px-4 text-beacon-orange flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                  </svg>
-                  60% Compression
-                </span>
-              </div>
-            </div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-beacon-100 flex items-center justify-center text-beacon-600" style={{ borderRadius: '2px' }}>
+                      <Satellite className="w-6 h-6" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="font-semibold text-gray-900">Intelligent Message Compression</h3>
+                      <p className="text-sm text-gray-600">Optimized for satellite bandwidth constraints</p>
+                    </div>
+                  </div>
+                  <div className="badge-info" style={{ borderRadius: '2px' }}>
+                    <span className="text-lg font-bold">62% smaller</span>
+                  </div>
+                </div>
 
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-gray-400">Compressed Message</span>
-              <span className="text-sm font-mono text-green-400">{compressedText.length} chars</span>
+                <div className="space-y-4">
+                  {/* Original Message */}
+                  <div className="text-left">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="metric-label text-gray-700">Standard Message</span>
+                      <span className="text-sm font-mono text-gray-500">148 characters</span>
+                    </div>
+                    <div className="bg-gray-50 border border-gray-200 p-4 font-mono text-sm text-gray-700" style={{ borderRadius: '2px' }}>
+                      What should I do for a severe snake bite emergency?
+                    </div>
+                  </div>
+
+                  {/* Arrow with icon */}
+                  <div className="flex items-center justify-center py-2">
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-beacon-200 to-beacon-300"></div>
+                    <div className="mx-4 p-2 bg-beacon-600 text-white" style={{ borderRadius: '2px' }}>
+                      <Zap className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 h-px bg-gradient-to-r from-beacon-300 via-beacon-200 to-transparent"></div>
+                  </div>
+
+                  {/* Compressed Message */}
+                  <div className="text-left">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="metric-label text-emerald-700">Satellite-Optimized</span>
+                      <span className="text-sm font-mono text-emerald-600 font-semibold">56 characters</span>
+                    </div>
+                    <div className="bg-emerald-50 border-2 border-emerald-200 p-4 font-mono text-sm text-emerald-800" style={{ borderRadius: '2px' }}>
+                      severe snake bite emerg protocol?
+                    </div>
+                  </div>
+                </div>
+
+                {/* Efficiency Bar */}
+                <div className="mt-6 pt-6 border-t border-beacon-100">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-sm font-semibold text-gray-700">Compression Efficiency</span>
+                    <span className="text-xl font-bold text-beacon-600">62%</span>
+                  </div>
+                  <div className="h-2 bg-gray-200 overflow-hidden" style={{ borderRadius: '2px' }}>
+                    <div 
+                      className="h-full bg-beacon-600 transition-all duration-1000"
+                      style={{ width: '62%', borderRadius: '2px' }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <p className="text-left text-gray-200 font-mono text-sm">
-              {compressedText}
-            </p>
-          </motion.div>
+          </div>
 
           {/* CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8, duration: 0.8 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
-          >
-            <button className="px-8 py-4 bg-beacon-orange hover:bg-orange-600 text-white font-semibold rounded-full transition-all duration-300 hover:scale-105 hover:shadow-2xl shadow-orange-500/50 group">
-              <span className="flex items-center gap-2">
-                Try Beacon Now
-                <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </span>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+            <button className="btn-primary group">
+              <Shield className="w-5 h-5" />
+              Get Started with Beacon
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
-            
-            <button className="px-8 py-4 glass border border-white/20 text-white font-semibold rounded-full hover:bg-white/10 transition-all duration-300 group">
-              <span className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" />
-                </svg>
-                Watch Demo
-              </span>
-            </button>
-          </motion.div>
 
-          {/* Scroll Indicator */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.2, duration: 1 }}
-            className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
-          >
-            <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="flex flex-col items-center gap-2"
-            >
-              <span className="text-sm text-gray-400">Scroll to explore</span>
-              <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-            </motion.div>
-          </motion.div>
+            <button className="btn-secondary">
+              View Technical Specs
+            </button>
+          </div>
+
+          {/* Key Metrics with Images */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <div className="card card-sharp text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 opacity-5">
+                <img src="https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=200" alt="" className="w-full h-full object-cover" />
+              </div>
+              <div className="relative z-10">
+                <div className="metric-large text-beacon-600 mb-2">&lt;2.8s</div>
+                <div className="metric-label">Response Time</div>
+              </div>
+            </div>
+            <div className="card card-mixed text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 opacity-5">
+                <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=200" alt="" className="w-full h-full object-cover" />
+              </div>
+              <div className="relative z-10">
+                <div className="metric-large text-beacon-600 mb-2">99.7%</div>
+                <div className="metric-label">Uptime SLA</div>
+              </div>
+            </div>
+            <div className="card card-rounded text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 opacity-5">
+                <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=200" alt="" className="w-full h-full object-cover" />
+              </div>
+              <div className="relative z-10">
+                <div className="metric-large text-beacon-600 mb-2">24/7</div>
+                <div className="metric-label">Global Coverage</div>
+              </div>
+            </div>
+          </div>
         </motion.div>
       </div>
     </section>

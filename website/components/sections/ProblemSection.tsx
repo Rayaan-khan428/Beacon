@@ -1,8 +1,9 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion, useScroll, useTransform } from 'framer-motion'
 import { useInView } from 'react-intersection-observer'
-import CountUp from 'react-countup'
+import { AlertTriangle, DollarSign, MessageSquare, XCircle } from 'lucide-react'
+import { useRef } from 'react'
 
 export default function ProblemSection() {
   const [ref, inView] = useInView({
@@ -10,111 +11,192 @@ export default function ProblemSection() {
     threshold: 0.1,
   })
 
-  const stats = [
-    {
-      value: 15,
-      suffix: '%',
-      label: 'of backcountry emergencies',
-      sublabel: 'involve communication failure',
-    },
-    {
-      value: 0.50,
-      prefix: '$',
-      suffix: '',
-      label: 'per satellite message',
-      sublabel: 'every character counts',
-      decimals: 2,
-    },
-    {
-      value: 160,
-      suffix: ' chars',
-      label: 'satellite message limit',
-      sublabel: 'your life depends on brevity',
-    },
-  ]
+  const sectionRef = useRef(null)
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start end", "end start"]
+  })
+
+  const y = useTransform(scrollYProgress, [0, 1], ['0%', '15%'])
 
   return (
-    <section className="relative py-32 overflow-hidden" ref={ref}>
-      {/* Background */}
-      <div className="absolute inset-0 z-0">
-        <div 
-          className="absolute inset-0 bg-cover bg-center opacity-10"
-          style={{
-            backgroundImage: 'url(https://images.unsplash.com/photo-1551632811-561732d1e306?q=80&w=2070)',
-          }}
+    <section ref={sectionRef} className="section-gray py-24 relative overflow-hidden">
+      {/* Parallax Background Image */}
+      <motion.div 
+        style={{ y, opacity: 0.08 }}
+        className="absolute inset-0"
+      >
+        <img 
+          src="https://images.unsplash.com/photo-1530979412150-6e4f59d4e01a?q=80&w=2070" 
+          alt="" 
+          className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-beacon-dark via-slate-900 to-beacon-dark"></div>
-      </div>
+      </motion.div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="section-container relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.5 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-6xl font-bold mb-6">
-            The Off-Grid <span className="gradient-text">Communication Gap</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 badge-alert" style={{ borderRadius: '2px' }}>
+            <AlertTriangle className="w-4 h-4" />
+            <span className="font-semibold">Critical Gap Identified</span>
+          </div>
+
+          <h2 className="heading-lg mb-6">
+            The Satellite Communication
+            <br />
+            <span className="text-orange-600">Crisis</span>
           </h2>
-          <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-            When you're off the grid, traditional satellite messaging falls short. 
-            Pre-programmed messages can't save your life. You need real intelligence.
+
+          <p className="subheading mx-auto">
+            When cellular infrastructure fails, traditional satellite devices leave users with inadequate,
+            pre-programmed responses that fail in real emergency scenarios.
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {stats.map((stat, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 30 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: index * 0.2 }}
-              className="glass rounded-2xl p-8 border border-white/10 hover-glow group"
-            >
-              <div className="text-center">
-                <div className="text-5xl md:text-6xl font-bold mb-4 gradient-text">
-                  {stat.prefix}
-                  {inView && (
-                    <CountUp
-                      end={stat.value}
-                      duration={2.5}
-                      decimals={stat.decimals || 0}
-                      delay={index * 0.2}
-                    />
-                  )}
-                  {stat.suffix}
-                </div>
-                <div className="text-lg font-semibold text-white mb-2">
-                  {stat.label}
-                </div>
-                <div className="text-sm text-gray-400">
-                  {stat.sublabel}
-                </div>
+        {/* Critical Stats Grid with Large Images */}
+        <div className="grid md:grid-cols-3 gap-8 mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="card card-sharp group hover:border-orange-200 relative overflow-hidden"
+          >
+            {/* Large Background Image */}
+            <div className="absolute inset-0 opacity-8">
+              <img 
+                src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=600" 
+                alt="" 
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-white via-white/90 to-white/50"></div>
+            </div>
+            
+            <div className="relative z-10">
+              <div className="w-14 h-14 bg-orange-100 flex items-center justify-center text-orange-600 mb-4 group-hover:scale-110 transition-transform" style={{ borderRadius: '2px' }}>
+                <AlertTriangle className="w-7 h-7" />
               </div>
-            </motion.div>
-          ))}
+              <div className="text-5xl font-bold text-gray-900 mb-2">15%</div>
+              <div className="metric-label mb-3">Communication Failures</div>
+              <div className="text-gray-600 leading-relaxed">
+                Backcountry emergencies compromised by inability to access critical survival intelligence
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="card card-mixed group hover:border-orange-200 relative overflow-hidden"
+          >
+            <div className="absolute inset-0 opacity-8">
+              <img 
+                src="https://images.unsplash.com/photo-1559827260-dc66d52bef19?q=80&w=600" 
+                alt="" 
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-white via-white/90 to-white/50"></div>
+            </div>
+            
+            <div className="relative z-10">
+              <div className="w-14 h-14 bg-orange-100 flex items-center justify-center text-orange-600 mb-4 group-hover:scale-110 transition-transform" style={{ borderRadius: '2px' }}>
+                <DollarSign className="w-7 h-7" />
+              </div>
+              <div className="text-5xl font-bold text-gray-900 mb-2">$0.50</div>
+              <div className="metric-label mb-3">Per Message Cost</div>
+              <div className="text-gray-600 leading-relaxed">
+                Premium satellite transmission rates make every single character economically critical
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="card card-rounded group hover:border-orange-200 relative overflow-hidden"
+          >
+            <div className="absolute inset-0 opacity-8">
+              <img 
+                src="https://images.unsplash.com/photo-1523961131990-5ea7c61b2107?q=80&w=600" 
+                alt="" 
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-white via-white/90 to-white/50"></div>
+            </div>
+            
+            <div className="relative z-10">
+              <div className="w-14 h-14 bg-orange-100 flex items-center justify-center text-orange-600 mb-4 group-hover:scale-110 transition-transform" style={{ borderRadius: '2px' }}>
+                <MessageSquare className="w-7 h-7" />
+              </div>
+              <div className="text-5xl font-bold text-gray-900 mb-2">160</div>
+              <div className="metric-label mb-3">Character Constraint</div>
+              <div className="text-gray-600 leading-relaxed">
+                SMS-length limitation insufficient for transmitting detailed emergency protocol data
+              </div>
+            </div>
+          </motion.div>
         </div>
 
-        {/* Call-out Box */}
+        {/* Critical Failure Analysis with Hero Image */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={inView ? { opacity: 1, scale: 1 } : {}}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="mt-16 glass rounded-2xl p-8 border-2 border-red-500/30 bg-red-500/5"
+          initial={{ opacity: 0, y: 30 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="bg-white p-10 border-2 border-orange-100 relative overflow-hidden"
+          style={{ borderRadius: '2px 32px 2px 32px' }}
         >
-          <div className="flex items-start gap-4">
+          {/* Hero Background Image */}
+          <div className="absolute inset-0 opacity-5">
+            <img 
+              src="https://images.unsplash.com/photo-1551632811-561732d1e306?q=80&w=2000" 
+              alt="" 
+              className="w-full h-full object-cover"
+            />
+          </div>
+
+          <div className="relative z-10 flex flex-col md:flex-row items-start gap-6">
             <div className="flex-shrink-0">
-              <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
+              <div className="w-16 h-16 bg-orange-500 flex items-center justify-center shadow-lg" style={{ borderRadius: '2px' }}>
+                <XCircle className="w-9 h-9 text-white" />
+              </div>
             </div>
-            <div>
-              <h3 className="text-xl font-bold text-white mb-2">The Problem is Real</h3>
-              <p className="text-gray-300">
-                Every year, hundreds of preventable backcountry deaths occur because adventurers 
-                couldn't access critical information. Weather changes. Medical emergencies. Wildlife encounters. 
-                Traditional satellite devices only send pre-programmed messages. <span className="text-beacon-orange font-semibold">You deserve better.</span>
+            <div className="flex-1">
+              <h3 className="text-3xl font-bold text-gray-900 mb-4">
+                Legacy Hardware: Mission Inadequate
+              </h3>
+              <p className="text-lg text-gray-700 leading-relaxed mb-6">
+                Garmin inReach, SPOT, and Zoleo devices provide only pre-programmed message templates.
+                Zero real-time weather analysis. Zero wildfire proximity alerts. Zero adaptive AI guidance.
               </p>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-gray-50 p-5 border border-gray-200" style={{ borderRadius: '2px' }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <XCircle className="w-5 h-5 text-red-500" />
+                    <span className="font-semibold text-gray-900">
+                      No Dynamic Intelligence
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Static responses cannot adapt to evolving emergency situations
+                  </p>
+                </div>
+                <div className="bg-gray-50 p-5 border border-gray-200" style={{ borderRadius: '2px' }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <XCircle className="w-5 h-5 text-red-500" />
+                    <span className="font-semibold text-gray-900">
+                      No Environmental Data
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Critical weather and fire data inaccessible when decisions matter most
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </motion.div>
