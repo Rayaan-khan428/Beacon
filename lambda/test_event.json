@@ -1,0 +1,21 @@
+{
+  "body": "Body=What%20is%20the%20weather%3F&From=%2B1234567890",
+  "headers": {
+    "Content-Type": "application/x-www-form-urlencoded"
+  },
+  "httpMethod": "POST",
+  "isBase64Encoded": false,
+  "path": "/webhook",
+  "queryStringParameters": null,
+  "requestContext": {
+    "accountId": "123456789012",
+    "apiId": "1234567890",
+    "httpMethod": "POST",
+    "identity": {
+      "sourceIp": "127.0.0.1"
+    },
+    "path": "/webhook",
+    "stage": "Prod"
+  }
+}
+

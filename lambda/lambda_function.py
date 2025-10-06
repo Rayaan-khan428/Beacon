@@ -3,17 +3,37 @@ import requests
 import os
 from twilio.rest import Client
 from dotenv import load_dotenv
+import boto3
 
-# Load environment variables from .env file (sfor local testing)
+# Load environment variables from .env file (for local testing)
 load_dotenv('.env')
 
+# Initialize AWS SSM client for Parameter Store
+ssm_client = boto3.client('ssm', region_name=os.environ.get('AWS_REGION', 'us-east-1'))
 
-# Get environment variables (set in AWS Lambda configuration or .env file)
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-WEATHER_API_KEY = os.environ.get('WEATHER_API_KEY')
-TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
-TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
-TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER')
+def get_parameter(name, decrypt=True):
+    """Get parameter from SSM Parameter Store or environment variable"""
+    # First try environment variable (for local testing with .env)
+    env_value = os.environ.get(name)
+    if env_value:
+        return env_value
+    
+    # Otherwise fetch from Parameter Store
+    try:
+        environment = os.environ.get('ENVIRONMENT', 'dev')
+        param_name = f"/beacon/{environment}/{name.lower().replace('_', '-')}"
+        response = ssm_client.get_parameter(Name=param_name, WithDecryption=decrypt)
+        return response['Parameter']['Value']
+    except Exception as e:
+        print(f"Error fetching parameter {name}: {e}")
+        return None
+
+# Get credentials from Parameter Store or environment variables
+GEMINI_API_KEY = get_parameter('GEMINI_API_KEY')
+WEATHER_API_KEY = get_parameter('WEATHER_API_KEY')
+TWILIO_ACCOUNT_SID = get_parameter('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = get_parameter('TWILIO_AUTH_TOKEN')
+TWILIO_PHONE_NUMBER = get_parameter('TWILIO_PHONE_NUMBER')
 
 # Initialize Twilio client
 twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
@@ -159,7 +179,7 @@ def handle_ai_request(message):
     system_prompt = """You are an emergency AI assistant for satellite messaging. 
     Provide critical, concise answers. Maximum 2-3 sentences. 
     Use abbreviations when possible. Focus on actionable advice.
-    If medical emergency, emphasize seeking professional help."""
+    If medical emergency, emphasize seeking professional help. Start every message with 'Beacon: '"""
     
     payload = {
         "contents": [{

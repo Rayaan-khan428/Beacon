@@ -1,0 +1,22 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "beacon-ai-dev"
+region = "us-east-1"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=dev"
+resolve_s3 = true
+
+[staging.deploy.parameters]
+stack_name = "beacon-ai-staging"
+region = "us-east-1"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=staging"
+resolve_s3 = true
+
+[production.deploy.parameters]
+stack_name = "beacon-ai-prod"
+region = "us-east-1"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=prod"
+resolve_s3 = true
