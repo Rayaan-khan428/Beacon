@@ -173,3 +173,5 @@ turborepo-cache/
 # Custom
 config.txt
 .DS_Store
+.aws-sam
+.venv
