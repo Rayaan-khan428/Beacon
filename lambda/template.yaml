@@ -23,11 +23,11 @@ Resources:
           ENVIRONMENT: !Ref Environment
       Policies:
         - Statement:
-          - Effect: Allow
-            Action:
-              - ssm:GetParameter
-              - ssm:GetParameters
-            Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/beacon/${Environment}/*'
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:GetParameters
+              Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/beacon/${Environment}/*'
       Events:
         TwilioWebhook:
           Type: Api
@@ -37,11 +37,11 @@ Resources:
 
 Outputs:
   BeaconFunctionApi:
-    Description: "API Gateway endpoint URL for Beacon function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/webhook"
+    Description: 'API Gateway endpoint URL for Beacon function'
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/webhook'
   BeaconFunctionArn:
-    Description: "Beacon Lambda Function ARN"
+    Description: 'Beacon Lambda Function ARN'
     Value: !GetAtt BeaconFunction.Arn
   BeaconFunctionIamRole:
-    Description: "Implicit IAM Role created for Beacon function"
+    Description: 'Implicit IAM Role created for Beacon function'
     Value: !GetAtt BeaconFunctionRole.Arn

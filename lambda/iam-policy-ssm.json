@@ -12,18 +12,13 @@
         "ssm:DeleteParameter",
         "ssm:DescribeParameters"
       ],
-      "Resource": [
-        "arn:aws:ssm:us-east-1:629664187828:parameter/beacon/*"
-      ]
+      "Resource": ["arn:aws:ssm:us-east-1:629664187828:parameter/beacon/*"]
     },
     {
       "Sid": "ListParameters",
       "Effect": "Allow",
-      "Action": [
-        "ssm:DescribeParameters"
-      ],
+      "Action": ["ssm:DescribeParameters"],
       "Resource": "*"
     }
   ]
 }
-

@@ -38,9 +38,7 @@
         "lambda:TagResource",
         "lambda:UntagResource"
       ],
-      "Resource": [
-        "arn:aws:lambda:us-east-1:629664187828:function:beacon-ai-*"
-      ]
+      "Resource": ["arn:aws:lambda:us-east-1:629664187828:function:beacon-ai-*"]
     },
     {
       "Sid": "IAMRoleCreation",
@@ -58,9 +56,7 @@
         "iam:TagRole",
         "iam:UntagRole"
       ],
-      "Resource": [
-        "arn:aws:iam::629664187828:role/beacon-ai-*"
-      ]
+      "Resource": ["arn:aws:iam::629664187828:role/beacon-ai-*"]
     },
     {
       "Sid": "APIGatewayAccess",
@@ -108,4 +104,3 @@
     }
   ]
 }
-
