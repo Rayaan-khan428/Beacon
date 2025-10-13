@@ -1,15 +1,17 @@
 import json
-import requests
 import os
-from twilio.rest import Client
-from dotenv import load_dotenv
+
 import boto3
+import requests
+from dotenv import load_dotenv
+from twilio.rest import Client
 
 # Load environment variables from .env file (for local testing)
-load_dotenv('.env')
+load_dotenv(".env")
 
 # Initialize AWS SSM client for Parameter Store
-ssm_client = boto3.client('ssm', region_name=os.environ.get('AWS_REGION', 'us-east-1'))
+ssm_client = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+
 
 def get_parameter(name, decrypt=True):
     """Get parameter from SSM Parameter Store or environment variable"""
@@ -17,23 +19,24 @@ def get_parameter(name, decrypt=True):
     env_value = os.environ.get(name)
     if env_value:
         return env_value
-    
+
     # Otherwise fetch from Parameter Store
     try:
-        environment = os.environ.get('ENVIRONMENT', 'dev')
+        environment = os.environ.get("ENVIRONMENT", "dev")
         param_name = f"/beacon/{environment}/{name.lower().replace('_', '-')}"
         response = ssm_client.get_parameter(Name=param_name, WithDecryption=decrypt)
-        return response['Parameter']['Value']
+        return response["Parameter"]["Value"]
     except Exception as e:
         print(f"Error fetching parameter {name}: {e}")
         return None
 
+
 # Get credentials from Parameter Store or environment variables
-GEMINI_API_KEY = get_parameter('GEMINI_API_KEY')
-WEATHER_API_KEY = get_parameter('WEATHER_API_KEY')
-TWILIO_ACCOUNT_SID = get_parameter('TWILIO_ACCOUNT_SID')
-TWILIO_AUTH_TOKEN = get_parameter('TWILIO_AUTH_TOKEN')
-TWILIO_PHONE_NUMBER = get_parameter('TWILIO_PHONE_NUMBER')
+GEMINI_API_KEY = get_parameter("GEMINI_API_KEY")
+WEATHER_API_KEY = get_parameter("WEATHER_API_KEY")
+TWILIO_ACCOUNT_SID = get_parameter("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = get_parameter("TWILIO_AUTH_TOKEN")
+TWILIO_PHONE_NUMBER = get_parameter("TWILIO_PHONE_NUMBER")
 
 # Initialize Twilio client
 twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
@@ -44,22 +47,25 @@ def lambda_handler(event, context):
     Main entry point for AWS Lambda
     Receives SMS from Twilio, processes it, and sends response
     """
-    
+
     print("Received event:", json.dumps(event))
-    
+
     try:
         # Parse incoming SMS from Twilio webhook
         body = parse_twilio_webhook(event)
-        user_message = body.get('Body', '').strip()
-        user_number = body.get('From', '')
-        
+        user_message = body.get("Body", "").strip()
+        user_number = body.get("From", "")
+
         print(f"Message from {user_number}: {user_message}")
-        
+
         # Check if message is empty
         if not user_message:
-            send_sms(user_number, "Empty message received. Please send a question or weather request.")
+            send_sms(
+                user_number,
+                "Empty message received. Please send a question or weather request.",
+            )
             return success_response("Empty message handled")
-        
+
         # Route based on message type
         if is_weather_request(user_message):
             print("Routing to weather handler")
@@ -67,17 +73,19 @@ def lambda_handler(event, context):
         else:
             print("Routing to AI handler")
             response = handle_ai_request(user_message)
-        
+
         # Compress response for satellite efficiency
         compressed_response = compress_message(response)
-        
-        print(f"Compressed response ({len(compressed_response)} chars): {compressed_response}")
-        
+
+        print(
+            f"Compressed response ({len(compressed_response)} chars): {compressed_response}"
+        )
+
         # Send SMS back to user
         send_sms(user_number, compressed_response)
-        
+
         return success_response("Message processed successfully")
-        
+
     except Exception as e:
         print(f"Error processing message: {str(e)}")
         return error_response(str(e))
@@ -87,10 +95,11 @@ def parse_twilio_webhook(event):
     """
     Parse the Twilio webhook POST data from API Gateway
     """
-    if 'body' in event:
+    if "body" in event:
         # API Gateway sends the body as a string
         import urllib.parse
-        body_string = event['body']
+
+        body_string = event["body"]
         return dict(urllib.parse.parse_qsl(body_string))
     return {}
 
@@ -101,17 +110,26 @@ def is_weather_request(message):
     Checks for coordinates or weather keywords
     """
     message_lower = message.lower()
-    
+
     # Check for weather keywords
-    weather_keywords = ['weather', 'forecast', 'temp', 'temperature', 'rain', 'snow', 'wind']
+    weather_keywords = [
+        "weather",
+        "forecast",
+        "temp",
+        "temperature",
+        "rain",
+        "snow",
+        "wind",
+    ]
     has_keyword = any(keyword in message_lower for keyword in weather_keywords)
-    
+
     # Check for coordinates (looks for numbers with optional decimal/comma)
     import re
+
     # Pattern for coordinates like "37.7749, -122.4194" or "37.7749,-122.4194"
-    coord_pattern = r'-?\d+\.?\d*\s*,\s*-?\d+\.?\d*'
+    coord_pattern = r"-?\d+\.?\d*\s*,\s*-?\d+\.?\d*"
     has_coords = bool(re.search(coord_pattern, message))
-    
+
     return has_coords or has_keyword
 
 
@@ -120,11 +138,11 @@ def handle_weather_request(message):
     Fetch weather data from OpenWeatherMap API
     """
     import re
-    
+
     # Try to extract coordinates from message
-    coord_pattern = r'(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)'
+    coord_pattern = r"(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)"
     coord_match = re.search(coord_pattern, message)
-    
+
     if coord_match:
         lat = float(coord_match.group(1))
         lon = float(coord_match.group(2))
@@ -132,27 +150,27 @@ def handle_weather_request(message):
         # Default to San Francisco if no coordinates provided
         lat, lon = 37.7749, -122.4194
         print(f"No coordinates found, using default: {lat}, {lon}")
-    
+
     # Call OpenWeatherMap API
     url = f"http://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={WEATHER_API_KEY}&units=imperial"
-    
+
     try:
         response = requests.get(url, timeout=5)
         response.raise_for_status()
         data = response.json()
-        
+
         # Extract key weather info
-        weather_desc = data['weather'][0]['description']
-        temp = round(data['main']['temp'])
-        feels_like = round(data['main']['feels_like'])
-        humidity = data['main']['humidity']
-        wind_speed = round(data['wind']['speed'])
-        
+        weather_desc = data["weather"][0]["description"]
+        temp = round(data["main"]["temp"])
+        feels_like = round(data["main"]["feels_like"])
+        humidity = data["main"]["humidity"]
+        wind_speed = round(data["wind"]["speed"])
+
         # Format response
         weather_response = f"Weather: {weather_desc}. Temp: {temp}°F (feels {feels_like}°F). Humidity: {humidity}%. Wind: {wind_speed}mph"
-        
+
         return weather_response
-        
+
     except requests.exceptions.Timeout:
         return "Weather service timeout. Try again."
     except requests.exceptions.RequestException as e:
@@ -169,45 +187,40 @@ def handle_ai_request(message):
     """
     # Gemini API endpoint (note: using v1beta as shown in the curl example)
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent"
-    
-    headers = {
-        "x-goog-api-key": GEMINI_API_KEY,
-        "Content-Type": "application/json"
-    }
-    
+
+    headers = {"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"}
+
     # System prompt optimized for emergency/satellite use
     system_prompt = """You are an emergency AI assistant for satellite messaging. 
     Provide critical, concise answers. Maximum 2-3 sentences. 
     Use abbreviations when possible. Focus on actionable advice.
     If medical emergency, emphasize seeking professional help. Start every message with 'Beacon: '"""
-    
+
     payload = {
-        "contents": [{
-            "parts": [{
-                "text": f"{system_prompt}\n\nUser: {message}"
-            }]
-        }],
+        "contents": [{"parts": [{"text": f"{system_prompt}\n\nUser: {message}"}]}],
         "generationConfig": {
             "temperature": 0.3,
             "maxOutputTokens": 150,
             "topP": 0.8,
-            "topK": 40
-        }
+            "topK": 40,
+        },
     }
-    
+
     try:
         response = requests.post(url, json=payload, headers=headers, timeout=15)
         response.raise_for_status()
         data = response.json()
-        
-        ai_response = data['candidates'][0]['content']['parts'][0]['text'].strip()
+
+        ai_response = data["candidates"][0]["content"]["parts"][0]["text"].strip()
         return ai_response
-        
+
     except requests.exceptions.Timeout:
         return "AI service timeout. Try simpler question."
     except requests.exceptions.RequestException as e:
         print(f"Gemini API error: {e}")
-        print(f"Response content: {response.text if 'response' in locals() else 'No response'}")
+        print(
+            f"Response content: {response.text if 'response' in locals() else 'No response'}"
+        )
         return "AI service unavailable. Try again later."
     except (KeyError, IndexError) as e:
         print(f"Gemini response parsing error: {e}")
@@ -221,55 +234,57 @@ def compress_message(message):
     """
     # Abbreviation dictionary
     replacements = {
-        'temperature': 'temp',
-        'degrees': '°',
-        'fahrenheit': 'F',
-        'celsius': 'C',
-        'weather': 'wx',
-        'forecast': 'fcst',
-        'precipitation': 'precip',
-        'humidity': 'humid',
-        'kilometers': 'km',
-        'meters': 'm',
-        'miles': 'mi',
-        'emergency': 'emerg',
-        'medical': 'med',
-        'hospital': 'hosp',
-        'should': 'shld',
-        'would': 'wld',
-        'could': 'cld',
-        'minute': 'min',
-        'hour': 'hr',
-        'second': 'sec',
-        'north': 'N',
-        'south': 'S',
-        'east': 'E',
-        'west': 'W',
-        'approximately': '~',
-        'between': 'btwn',
-        'without': 'w/o',
-        'with': 'w/',
-        'and': '&',
-        'you': 'u',
-        'your': 'ur',
-        'are': 'r',
-        'to': '2',
-        'for': '4',
-        'at': '@',
+        "temperature": "temp",
+        "degrees": "°",
+        "fahrenheit": "F",
+        "celsius": "C",
+        "weather": "wx",
+        "forecast": "fcst",
+        "precipitation": "precip",
+        "humidity": "humid",
+        "kilometers": "km",
+        "meters": "m",
+        "miles": "mi",
+        "emergency": "emerg",
+        "medical": "med",
+        "hospital": "hosp",
+        "should": "shld",
+        "would": "wld",
+        "could": "cld",
+        "minute": "min",
+        "hour": "hr",
+        "second": "sec",
+        "north": "N",
+        "south": "S",
+        "east": "E",
+        "west": "W",
+        "approximately": "~",
+        "between": "btwn",
+        "without": "w/o",
+        "with": "w/",
+        "and": "&",
+        "you": "u",
+        "your": "ur",
+        "are": "r",
+        "to": "2",
+        "for": "4",
+        "at": "@",
+        "battery": "bat",
     }
-    
+
     compressed = message
-    
+
     # Apply replacements (case-insensitive)
     for full, abbrev in replacements.items():
         # Use word boundaries to avoid partial replacements
         import re
-        pattern = re.compile(r'\b' + re.escape(full) + r'\b', re.IGNORECASE)
+
+        pattern = re.compile(r"\b" + re.escape(full) + r"\b", re.IGNORECASE)
         compressed = pattern.sub(abbrev, compressed)
-    
+
     # Remove extra spaces
-    compressed = ' '.join(compressed.split())
-    
+    compressed = " ".join(compressed.split())
+
     return compressed
 
 
@@ -279,9 +294,7 @@ def send_sms(to_number, message):
     """
     try:
         twilio_message = twilio_client.messages.create(
-            body=message,
-            from_=TWILIO_PHONE_NUMBER,
-            to=to_number
+            body=message, from_=TWILIO_PHONE_NUMBER, to=to_number
         )
         print(f"SMS sent successfully. SID: {twilio_message.sid}")
         return True
@@ -292,19 +305,9 @@ def send_sms(to_number, message):
 
 def success_response(message):
     """Return successful Lambda response"""
-    return {
-        'statusCode': 200,
-        'body': json.dumps({
-            'message': message
-        })
-    }
+    return {"statusCode": 200, "body": json.dumps({"message": message})}
 
 
 def error_response(error_message):
     """Return error Lambda response"""
-    return {
-        'statusCode': 500,
-        'body': json.dumps({
-            'error': error_message
-        })
-    }
+    return {"statusCode": 500, "body": json.dumps({"error": error_message})}

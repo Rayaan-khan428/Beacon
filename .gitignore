@@ -1,3 +1,177 @@
-# Created by venv; see https://docs.python.org/3/library/venv.html
-config.txt
+# ============================
+# Global
+# ============================
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+*.swo
+*.bak
+*.orig
+*.rej
+*.lock
 *.env
+.env.*
+.envrc
+.idea/
+__pycache__/
+.cache/
+dist/
+build/
+out/
+coverage/
+node_modules/
+*.local
+*.pid
+
+# ============================
+# Python
+# ============================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+.installed.cfg
+wheels/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Pyre / Mypy / Pyright / Ruff
+.pyre/
+.mypy_cache/
+.pytype/
+ruff_cache/
+.typings/
+
+# Jupyter notebooks
+.ipynb_checkpoints
+
+# Pytest / Coverage
+.pytest_cache/
+.coverage
+*.cover
+coverage.xml
+htmlcov/
+
+# ============================
+# TypeScript / Node
+# ============================
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+.svelte-kit/
+.storybook-out/
+*.tsbuildinfo
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Framework-specific
+# React / Next.js
+.next/
+.vercel/
+# Vue
+.vite/
+vite.config.ts.timestamp*
+# Expo / React Native
+.expo/
+.expo-shared/
+web-build/
+
+# Lockfiles (optional if using single package manager)
+# Uncomment the ones you don't want tracked
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# ============================
+# iOS / Xcode
+# ============================
+# Build products
+build/
+DerivedData/
+
+# User settings
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/xcshareddata/**
+
+# SwiftPM
+.swiftpm/
+Package.resolved
+.build/
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Carthage
+Carthage/
+Carthage/Build/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# iOS / macOS generated
+*.xcuserdatad
+*.moved-aside
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# ============================
+# Monorepo tooling
+# ============================
+# Lerna / Nx / Turborepo
+.lerna/
+.nx/
+.turbo/
+turborepo-cache/
+.turbocache/
+.cache/
+.tmp/
+.tmp-build/
+
+
+# Custom
+config.txt
+.DS_Store
+.aws-sam
+.venv

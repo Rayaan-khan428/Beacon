@@ -5,12 +5,14 @@ AWS Lambda function that handles SMS messages via Twilio, providing AI responses
 ## 🚀 Quick Start for New Team Members
 
 ### Prerequisites
+
 1. Install AWS CLI: `brew install awscli`
 2. Install AWS SAM CLI: `brew install aws-sam-cli`
 3. Configure AWS credentials: `aws configure`
 4. Python 3.13 installed
 
 ### Initial Setup
+
 1. Clone the repository
 2. Navigate to lambda directory: `cd lambda`
 3. Set up secrets (first time only): `./setup_secrets.sh dev`
@@ -18,16 +20,19 @@ AWS Lambda function that handles SMS messages via Twilio, providing AI responses
 ## 📦 Local Development
 
 ### Install Dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### Build the Lambda
+
 ```bash
 sam build
 ```
 
 ### Test Locally
+
 ```bash
 # Invoke function with test event
 sam local invoke BeaconFunction --event test_event.json
@@ -38,6 +43,7 @@ sam local start-api
 ```
 
 ### Run Unit Tests
+
 ```bash
 python test_local.py
 ```
@@ -45,18 +51,21 @@ python test_local.py
 ## 🚢 Deployment
 
 ### Deploy to Development
+
 ```bash
 sam build
 sam deploy --config-env default
 ```
 
 ### Deploy to Staging
+
 ```bash
 sam build
 sam deploy --config-env staging
 ```
 
 ### Deploy to Production
+
 ```bash
 sam build
 sam deploy --config-env production
@@ -67,11 +76,13 @@ sam deploy --config-env production
 All secrets are stored in AWS Systems Manager Parameter Store under `/beacon/{environment}/`.
 
 ### View All Secrets for an Environment
+
 ```bash
 aws ssm get-parameters-by-path --path /beacon/dev --with-decryption
 ```
 
 ### Update a Single Secret
+
 ```bash
 aws ssm put-parameter \
   --name /beacon/dev/gemini-api-key \
@@ -81,6 +92,7 @@ aws ssm put-parameter \
 ```
 
 ### Required Secrets
+
 - `gemini-api-key` - Google Gemini API key
 - `weather-api-key` - OpenWeatherMap API key
 - `twilio-account-sid` - Twilio account SID
@@ -114,13 +126,17 @@ lambda/
 ## 🧪 Testing
 
 ### Test Event Format
+
 Edit `test_event.json` to test different scenarios:
+
 - Weather request: `Body=weather&From=%2B1234567890`
 - AI question: `Body=What%20is%20the%20capital%20of%20France%3F&From=%2B1234567890`
 - Coordinates: `Body=37.7749%2C-122.4194&From=%2B1234567890`
 
 ### Adding Unit Tests
+
 Add tests to `test_local.py`. Run with:
+
 ```bash
 python test_local.py
 ```
@@ -128,19 +144,24 @@ python test_local.py
 ## 🆘 Troubleshooting
 
 ### SAM Build Fails
+
 - Ensure Python 3.13 is installed
 - Check that requirements.txt has all dependencies
 
 ### Deployment Fails with "Unable to resolve parameter"
+
 - Make sure secrets are stored in Parameter Store
 - Run: `./setup_secrets.sh dev` (or staging/prod)
 
 ### Function Times Out
+
 - Check CloudWatch Logs: `sam logs -n BeaconFunction --stack-name beacon-ai-dev`
 - Increase timeout in template.yaml
 
 ### Can't Find API Endpoint
+
 After deployment, get the endpoint:
+
 ```bash
 aws cloudformation describe-stacks \
   --stack-name beacon-ai-dev \
@@ -151,6 +172,7 @@ aws cloudformation describe-stacks \
 ## 📊 Monitoring
 
 ### View Logs
+
 ```bash
 # Real-time logs
 sam logs -n BeaconFunction --stack-name beacon-ai-dev --tail
@@ -160,16 +182,21 @@ sam logs -n BeaconFunction --stack-name beacon-ai-dev --start-time '10min ago'
 ```
 
 ### CloudWatch Dashboard
+
 View metrics in AWS Console:
+
 - Lambda → Functions → beacon-ai-{env} → Monitoring
 
 ## 🔧 Configuration
 
 ### Change AWS Region
+
 Edit `samconfig.toml` and update the `region` parameter.
 
 ### Adjust Lambda Resources
+
 Edit `template.yaml`:
+
 - `Timeout`: Execution timeout (seconds)
 - `MemorySize`: Memory allocation (MB)
 - `Runtime`: Python version
@@ -187,4 +214,3 @@ Edit `template.yaml`:
 - Check CloudWatch Logs first
 - Review Lambda function code in `lambda_function.py`
 - Test with `sam local invoke` to debug locally
-
